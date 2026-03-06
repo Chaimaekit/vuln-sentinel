@@ -1,0 +1,14 @@
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    strace \
+    ltrace \
+    file \
+    binutils \
+    gcc \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m sandboxuser
+USER sandboxuser
+WORKDIR /sandbox
