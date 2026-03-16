@@ -3,9 +3,6 @@ import config
 
 
 def send_slack(filename, llm_result, report_path, sandbox_findings=None):
-    """
-    Sends formatted Slack notification with full analysis results.
-    """
     score   = llm_result.get("risk_score", 0)
     level   = llm_result.get("risk_level", "unknown").upper()
     summary = llm_result.get("summary", "No summary.")

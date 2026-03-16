@@ -2,7 +2,7 @@ import subprocess
 import os
 
 
-#source code ext as non binary
+#source code ext as non binary 
 SOURCE_EXTENSIONS = {
     ".c", ".cpp", ".h", ".py", ".js", ".ts",
     ".java", ".go", ".rb", ".php", ".cs", ".rs"
@@ -10,12 +10,6 @@ SOURCE_EXTENSIONS = {
 
 
 def is_binary(filepath):
-    """
-    Returns True if file is a compiled binary.
-    Uses two checks:
-    1. File extension
-    2. 'file' command output
-    """
     ext = os.path.splitext(filepath)[1].lower()
     if ext in SOURCE_EXTENSIONS:
         return False
@@ -26,17 +20,10 @@ def is_binary(filepath):
 
 
 def get_file_type(filepath):
-    """
-    Returns a human readable file type string.
-    """
     return subprocess.getoutput(f"file {filepath}")
 
 
 def is_analyzable(filepath):
-    """
-    Returns True if we can actually analyze this file.
-    Skips things like images, archives, empty files.
-    """
     if os.path.getsize(filepath) == 0:
         return False
 

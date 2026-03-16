@@ -1,6 +1,5 @@
 // ExportDecompiled.java
 // Ghidra script that exports decompiled C code for all functions
-//@category VulnSentinel
 
 import ghidra.app.script.GhidraScript;
 import ghidra.app.decompiler.DecompInterface;

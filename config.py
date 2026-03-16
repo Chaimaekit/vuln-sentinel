@@ -24,8 +24,8 @@ MODELS = {
 }
 
 
-RISK_THRESHOLD  = 6    # 0-10, above this triggers sandbox + slack
-SANDBOX_TIMEOUT = 30   # seconds the sandbox runs the file
+RISK_THRESHOLD  = 6 
+SANDBOX_TIMEOUT = 30 
 
 
 SLACK_WEBHOOK = f"{SLACK_WEBHOOK_URL}"

@@ -4,11 +4,6 @@ import config
 
 
 def run_in_sandbox(filepath):
-    """
-    Runs file in disposable Docker container.
-    Collects behavioral evidence safely.
-    Container is destroyed after analysis.
-    """
     filename = os.path.basename(filepath)
     findings = {
         "executed":         False,

@@ -1,8 +1,10 @@
-reports/
+reports/*
 logs/
-incoming/
+venv/
+incoming/*
 __pycache__/
 *.pyc
 .env
-config_local.py
-notes*
+HOW*
+processed/*
+tests/

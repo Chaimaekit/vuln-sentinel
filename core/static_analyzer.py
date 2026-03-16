@@ -5,11 +5,6 @@ import config
 
 
 def run_semgrep(filepath):
-    """
-    Runs semgrep on a file and returns findings.
-    Works on source code directly.
-    Works on decompiled output from Ghidra too.
-    """
     print(f"    [*] Running Semgrep...")
     result = subprocess.getoutput(
         f"semgrep --config=auto --json {filepath} 2>/dev/null"
@@ -25,10 +20,6 @@ def run_semgrep(filepath):
 
 
 def run_basic_binary_checks(filepath):
-    """
-    Runs fast lightweight checks on a binary.
-    No execution — purely static.
-    """
     print(f"    [*] Running binary checks...")
     return {
         "file_info": subprocess.getoutput(
@@ -93,17 +84,24 @@ def decompile_with_ghidra(filepath):
 
 
 def analyze_source(filepath):
-    """Full analysis for source code files."""
     print(f"  [*] Analyzing source code: {filepath}")
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            source_content = f.read()
+    except Exception as e:
+        print(f"    [!] Could not read source: {e}")
+        source_content = ""
+    
     findings = {
         "type":             "source",
+        "source_content":   source_content,
         "semgrep_findings": run_semgrep(filepath)
     }
     return findings
 
 
 def analyze_binary(filepath):
-    """Full analysis for binary files."""
     print(f"  [*] Analyzing binary: {filepath}")
 
     findings = {
