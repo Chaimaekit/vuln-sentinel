@@ -1,266 +1,232 @@
-# 🚀 VulnSentinel - Quick Start & Testing Reference
+# VulnSentinel — Quick Start
 
-## ✅ System Status: READY FOR TESTING
+## Prerequisites
 
-All safety isolation verified ✓
+Make sure these are running before you start:
 
-```
-✓ Docker Sandbox       : vulnsentinel-sandbox (ready)
-✓ Ollama LLM          : running on localhost:11434
-✓ VulnSentinel Agent  : running (monitoring incoming/)
-✓ Dashboard           : http://127.0.0.1:5000
-✓ Network Isolation   : ✓ PASS (sandbox blocked from internet)
-✓ User Privilege      : ✓ PASS (running as non-root)
-✓ Memory Limits       : ✓ PASS (512MB enforced)
-✓ Auto-Cleanup        : ✓ PASS (containers destroyed)
+```bash
+# 1. Ollama must be running
+pgrep -f "ollama serve" || ollama serve &
+
+# 2. Docker image must exist
+docker images | grep vulnsentinel-sandbox
+# If missing:
+docker build -f Dockerfile.sandbox -t vulnsentinel-sandbox .
+
+# 3. mistral:7b must be pulled
+ollama list | grep mistral
+# If missing:
+ollama pull mistral:7b
 ```
 
 ---
 
-## 📁 Test Files Available
-
-All in `vuln-sentinel/tests/`
-
-| File | Type | Expected Risk |
-|------|------|---|
-| `clean_program` | Binary | 🟢 LOW (1-3) |
-| `buffer_overflow.c` | Source | 🔴 HIGH (8-10) |
-| `sql_injection.py` | Source | 🔴 HIGH (7-9) |
-| `command_injection.js` | Source | 🔴 HIGH (7-9) |
-| `hidden_malware.sh` | Script | 🔴 CRITICAL (9-10) |
-
----
-
-## 🎯 Start Testing - Copy & Paste Commands
-
-### Option A: Test ONE file (recommended first)
+## Start the Agent
 
 ```bash
-# Terminal 1: Watch real-time analysis
-tail -f /tmp/vulnsentinel.log
-
-# Terminal 2: Copy test file
-cp vuln-sentinel/tests/buffer_overflow.c \
-   vuln-sentinel/incoming/
-
-# Wait ~10 seconds, watch Terminal 1 for analysis
+cd ~/vuln-sentinel
+python3 agent.py
 ```
 
-### Option B: Test multiple files
+You should see:
 
-```bash
-cd vuln-sentinel
-
-# Test clean file
-cp tests/clean_program incoming/test1.bin
-sleep 8
-
-# Test vulnerability
-cp tests/buffer_overflow.c incoming/test2.c
-sleep 8
-
-# Test malware
-cp tests/hidden_malware.sh incoming/test3.sh
-sleep 8
 ```
-
-### Option C: Test all files
-
-```bash
-for f in vuln-sentinel/tests/*; do
-  [ -f "$f" ] && cp "$f" vuln-sentinel/incoming/
-done
+╔══════════════════════════════════════╗
+║         VulnSentinel v1.0            ║
+║  Privacy-first vulnerability triage  ║
+╚══════════════════════════════════════╝
+Watching:   vuln-sentinel/incoming
+Threshold:  6/10
+Dashboard:  http://127.0.0.1:5000
 ```
 
 ---
 
-## 📊 View Results - Choose ONE
+## Access the Dashboard
 
-### Method 1: Live Terminal Logs
-```bash
-tail -f /tmp/vulnsentinel.log
-```
-**Best for:** Understanding the pipeline in real-time
-
-### Method 2: Reports Directory
-```bash
-ls -lh vuln-sentinel/reports/
-```
-**Best for:** Seeing all analysis results
-
-### Method 3: View Latest Report
-```bash
-ls -t vuln-sentinel/reports/*_report.json | head -1 | \
-  xargs cat | python3 -m json.tool | head -60
-```
-**Best for:** Detailed JSON analysis
-
-### Method 4: Web Dashboard
+**On the VM directly:**
 ```
 http://127.0.0.1:5000
 ```
-**Best for:** Visual overview of all files
 
----
-
-## 🔍 What You'll See During Analysis
-
-```
-[NEW FILE DETECTED]
-  ↓
-[STATIC ANALYSIS] → Rules Engine, Semgrep, Checksec
-  ↓
-[FIRST VOTE] → Risk assessment
-  ↓
-[IF SUSPICIOUS: SANDBOX] → Docker container spawns
-  ↓
-[STRACE MONITORING] → Capture system calls
-  ↓
-[LLM ANALYSIS] → AI verdict
-  ↓
-[FINAL VOTE] → Generate report
-  ↓
-[ALERT IF THREAT] → Slack notification, report saved
-```
-
----
-
-## 🛡️ Why Your Machine is Safe
-
-### Multi-Layer Isolation
-
-1. **Docker Container** - Complete OS-level isolation
-   - Only malware executes there
-   - Host system untouched
-
-2. **Network Isolation** - `--network none`
-   - Sandbox cannot reach internet
-   - Cannot exfiltrate data
-
-3. **Resource Limits** - Memory & CPU capped
-   - DoS attacks blocked
-   - System remains responsive
-
-4. **User Privilege** - Running as `sandboxuser`
-   - Cannot escalate privileges
-   - Cannot access sensitive files
-
-5. **Auto-Cleanup** - Container destroyed after
-   - Zero persistence
-   - No traces left behind
-
-6. **File Permissions** - Read-only mounts
-   - Sandbox cannot modify incoming files
-   - Cannot write to host filesystem
-
----
-
-## 📈 Expected Test Results
-
-### ✅ Clean Program
-```
-Rules:      0/10 (clean)
-LLM:        "No vulnerabilities"
-Semgrep:    0 findings
-Sandbox:    Clean execution
-Decision:   ARCHIVE (safe)
-Risk:       🟢 1-2
-```
-
-### 🔴 Buffer Overflow  
-```
-Rules:      6/10 (gets + strcpy)
-LLM:        "Exploitable buffer overflow"
-Semgrep:    2 findings
-Sandbox:    Crash detected, shell spawned
-Decision:   ALERT (threat)
-Risk:       🔴 8-10
-```
-
-### 🔴 SQL Injection
-```
-Rules:      3/10 (input patterns)
-LLM:        "Direct SQL concatenation"
-Semgrep:    4 findings
-Sandbox:    N/A (script analysis)
-Decision:   ALERT (threat)
-Risk:       🔴 7-9
-```
-
-### 🔴 Malware
-```
-Rules:      7/10 (/bin/sh, shell spawning)
-LLM:        "Reverse shell trojan"
-Semgrep:    5+ findings
-Sandbox:    Network connect blocked, shell spawned
-Decision:   ALERT (threat)
-Risk:       🔴 9-10
-```
-
----
-
-## ⏱️ Timeline
-
-- **Detection**: ~1 second (file appears in incoming/)
-- **Static Analysis**: ~2 seconds (rules, semgrep)
-- **First Vote**: ~1 second (decision to sandbox?)
-- **Sandbox Execution**: ~30 seconds (if needed)
-- **LLM Analysis**: ~10-30 seconds (AI verdict)
-- **Final Report**: ~2 seconds (save to disk)
-- **Total**: ~30-60 seconds per file
-
----
-
-## 🚨 Troubleshooting Quick Fixes
-
-### Agent not analyzing files?
+**From your Windows machine (SSH tunnel):**
 ```bash
-ps aux | grep python.*agent.py
-# If dead, restart:
-cd vuln-sentinel && python3 agent.py &
-```
-
-### No reports being generated?
-```bash
-# Check permissions
-ls -la vuln-sentinel/reports/
-chmod 777 vuln-sentinel/reports/
-```
-
-### Ollama connection failing?
-```bash
-# Check if running
-pgrep -f "ollama serve"
-# If not running:
-ollama serve &
-```
-
-### Docker image missing?
-```bash
-cd vuln-sentinel && \
-  docker build -f Dockerfile.sandbox -t vulnsentinel-sandbox .
+ssh -L 5000:127.0.0.1:5000 usertest@YOUR_VM_IP
+# then open http://localhost:5000 in your browser
 ```
 
 ---
 
-## 📚 For More Details
+## Test the Pipeline
 
-- **README.md** - Full documentation and setup
-- **HOW_IT_WORKS.md** - Deep technical explanation
-- **TESTING_GUIDE.md** - Comprehensive testing walkthrough
-- **test_and_verify.sh** - System verification script
+### Test 1 — Vulnerable binary (recommended first)
+
+```bash
+cp tests/vuln_sample incoming/
+```
+
+Expected result:
+```
+Rules:    7/10  — strcpy, system, /bin/sh
+LLM:      8/10  — buffer overflow confirmed
+Semgrep:  2 findings
+Sandbox:  shell spawned CONFIRMED
+Decision: ALERT
+```
+
+### Test 2 — Vulnerable source code
+
+```bash
+cp tests/vuln_sample.c incoming/
+```
+
+Expected result:
+```
+Rules:    6/10  — strcpy, system
+LLM:      7/10  — exploitable input handling
+Semgrep:  2 findings
+Decision: ALERT or SANDBOX
+```
+
+### Test 3 — Run both and watch live
+
+Open two terminals:
+
+```bash
+# Terminal 1 — watch the agent output
+python3 agent.py
+
+# Terminal 2 — drop files
+cp tests/vuln_sample incoming/
+sleep 60
+cp tests/vuln_sample.c incoming/
+```
 
 ---
 
-## 🎓 Learning Path
+## View Reports
 
-1. **First**: Test `clean_program` to verify system works
-2. **Then**: Test `buffer_overflow.c` to see detection in action
-3. **Then**: Test `sql_injection.py` to see LLM analysis
-4. **Finally**: Test `hidden_malware.sh` to see full pipeline including sandbox
+### On the dashboard
+```
+http://127.0.0.1:5000
+```
+Click "Analysis" in the sidebar. Each card shows filename, risk score, verdict, and signal breakdown.
 
-Each test will teach you something about the system!
+### From the terminal
+
+```bash
+# List all reports
+ls -lht reports/
+
+# View the latest report
+ls -t reports/*_report.json | head -1 | xargs python3 -m json.tool | head -80
+```
+
+### Download JSON
+Click "export json" on any card in the dashboard.
 
 ---
 
-**Status**: ✅ Ready | **Safety**: ✅ Verified | **Time**: 🚀 Ready to go!
+## Use the AI Chat
+
+1. Open the dashboard
+2. Click "AI Chat" in the sidebar
+3. Ask anything security-related:
+
+```
+what is a buffer overflow and how does strcpy cause it?
+explain CVE-2021-44228
+what does shell_spawned mean in my sandbox report?
+```
+
+Responses stream token by token from your local mistral:7b — nothing leaves the VM.
+
+---
+
+## Generate More Test Files
+
+Use the attack generator (requires Anthropic API key):
+
+```bash
+# List available scenarios
+python3 tests/attack_generator.py --list
+
+# Generate a specific type
+python3 tests/attack_generator.py --scenario stack_overflow
+python3 tests/attack_generator.py --scenario command_injection
+python3 tests/attack_generator.py --scenario backdoor
+
+# Generate all 10 types
+python3 tests/attack_generator.py
+```
+
+Generated files land directly in `incoming/` and are analyzed automatically.
+
+---
+
+## Pipeline Timing
+
+| Step              | Time          |
+|-------------------|---------------|
+| File detection    | ~1 second     |
+| Static analysis   | ~2–5 seconds  |
+| Ghidra decompile  | ~60 seconds   |
+| First vote        | instant       |
+| Docker sandbox    | ~30 seconds   |
+| LLM analysis      | ~20 seconds   |
+| Total (no Ghidra) | ~30–60 sec    |
+| Total (+ Ghidra)  | ~90–120 sec   |
+
+---
+
+## Troubleshooting
+
+**File analyzed but no report appears on dashboard**
+```bash
+ls reports/   # check report was saved
+# then refresh the dashboard
+```
+
+**Agent not picking up files**
+```bash
+# Check it's running
+ps aux | grep agent.py
+# Check incoming/ directory
+ls -la incoming/
+```
+
+**LLM timed out**
+```bash
+# Check Ollama is running and model is loaded
+curl -s http://localhost:11434/api/tags | python3 -m json.tool
+```
+
+**Sandbox not running**
+```bash
+# Check Docker is running
+docker ps
+# Rebuild image if needed
+docker build -f Dockerfile.sandbox -t vulnsentinel-sandbox .
+```
+
+**Download JSON button gives error**
+```bash
+# Make sure dashboard/app.py has: import config
+head -10 dashboard/app.py | grep "import config"
+```
+
+---
+
+## What Each Directory Does
+
+| Directory    | Purpose                                      |
+|-------------|----------------------------------------------|
+| `incoming/`  | Drop files here — agent watches this folder  |
+| `processed/` | Files moved here after analysis completes    |
+| `reports/`   | JSON reports for every analyzed file         |
+| `logs/`      | Application logs                             |
+| `tests/`     | Sample vulnerable files for testing          |
+
+---
+
+**Version:** 1.0 | **Status:** Phase 1 Complete
