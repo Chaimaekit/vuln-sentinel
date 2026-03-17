@@ -134,8 +134,8 @@ def semgrep_count(findings):
     return len(src)
 
 
-def should_call_llm(rule_score):
-    return rule_score >= 2
+def should_call_llm(rule_score, sem_count=0):
+    return rule_score >= 2 or sem_count >= 2
 
 
 def vote(rule_score, llm_score, sem_count, sandbox_findings=None):
@@ -168,15 +168,22 @@ def vote(rule_score, llm_score, sem_count, sandbox_findings=None):
 
     # Signal 4 — Sandbox ground truth (only if available)
     if sandbox_findings:
+        file_ops  = sandbox_findings.get("file_operations", [])
+        sensitive = any(
+            p in f for f in file_ops
+            for p in ["/etc/passwd", "/etc/shadow", "/.ssh"]
+        )
         sb_threat = (
             sandbox_findings.get("shell_spawned", False) or
             len(sandbox_findings.get("network_attempts", [])) > 0 or
             sandbox_findings.get("crashed", False)
         )
         if sb_threat:
-            votes.append("threat"); signals.append("Sandbox: malicious behavior CONFIRMED")
+            votes.append("threat");     signals.append("Sandbox: malicious behavior CONFIRMED")
+        elif sensitive:
+            votes.append("suspicious"); signals.append("Sandbox: sensitive file access detected")
         else:
-            votes.append("clean");  signals.append("Sandbox: no malicious behavior")
+            votes.append("clean");      signals.append("Sandbox: no malicious behavior")
 
     threat_votes     = votes.count("threat")
     suspicious_votes = votes.count("suspicious")

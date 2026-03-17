@@ -13,17 +13,26 @@ from core.sandbox         import run_in_sandbox
 from core.report          import save_report
 from core.notifier        import send_slack
 from dashboard.app        import start_dashboard
+import stat
 
-#new dir to avoid reanalyzing files
-PROCESSED_DIR = os.path.join(config.BASE_DIR, "processed")
-os.makedirs(PROCESSED_DIR, exist_ok=True)
 
+PROCESSED_DIR = config.PROCESSED_DIR
+
+def quarantine_file(filepath):
+    try:
+        current = os.stat(filepath).st_mode
+        safe = current & ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.chmod(filepath, safe)
+        print(f"  [+] Quarantined: execute bits removed")
+    except Exception as e:
+        print(f"  [!] Could not quarantine file: {e}")
 
 
 def process_file(filepath):
     filename = os.path.basename(filepath)
     print(f"\n{'='*55}")
     print(f"[*] New file: {filename}")
+    quarantine_file(filepath)
 
     if not is_analyzable(filepath):
         print(f"  [!] Skipping — not an analyzable file type")
@@ -42,7 +51,7 @@ def process_file(filepath):
         print(f"      → {r}")
 
     # ── Step 3: Signal 2 — LLM (only if rules flagged) ───
-    if should_call_llm(rule_score):
+    if should_call_llm(rule_score, sem_count):
         llm_result = analyze_with_llm(findings, filename)
         llm_score  = llm_result.get("risk_score", 0)
     else:
@@ -121,7 +130,6 @@ def process_file(filepath):
         print(f"  [+] File moved to: processed/{filename}")
     except Exception as e:
         print(f"  [!] Could not move file to processed/: {e}")
-        # Try to delete it from incoming to prevent re-analysis
         try:
             os.remove(filepath)
             print(f"  [+] File deleted from incoming/")

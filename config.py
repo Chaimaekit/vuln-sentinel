@@ -38,6 +38,8 @@ SANDBOX_CPUS   = "0.5"
 
 DASHBOARD_HOST = "127.0.0.1"
 DASHBOARD_PORT = 5000
+PROCESSED_DIR = os.path.join(BASE_DIR, "processed")
 
-for _dir in [INCOMING_DIR, REPORTS_DIR, LOGS_DIR, GHIDRA_PROJECT]:
+
+for _dir in [INCOMING_DIR, REPORTS_DIR, LOGS_DIR, GHIDRA_PROJECT, PROCESSED_DIR]:
     os.makedirs(_dir, exist_ok=True)
