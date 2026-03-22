@@ -21,9 +21,13 @@ PROCESSED_DIR = config.PROCESSED_DIR
 def quarantine_file(filepath):
     try:
         current = os.stat(filepath).st_mode
-        safe = current & ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        os.chmod(filepath, safe)
-        print(f"  [+] Quarantined: execute bits removed")
+        exec_bits = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+
+        if current & exec_bits:#the &&=000000000 then no need for quar
+            os.chmod(filepath, current & ~exec_bits)
+            print(f"  [+] Quarantined: execute bits removed")
+        else:
+            print(f"  [~] No execute bits found, skipping")
     except Exception as e:
         print(f"  [!] Could not quarantine file: {e}")
 

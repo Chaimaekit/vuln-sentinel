@@ -11,7 +11,7 @@ INCOMING_DIR   = os.path.join(BASE_DIR, "incoming")
 REPORTS_DIR    = os.path.join(BASE_DIR, "reports")
 LOGS_DIR       = os.path.join(BASE_DIR, "logs")
 GHIDRA_PATH    = os.path.expanduser(
-    "~/tools/ghidra_11.1.2_PUBLIC/support/analyzeHeadless"
+    "~/tools/ghidra_11.1.2_PUBLIC/support/analyzeHeadless"#the version nb change ATTENTION
 )
 GHIDRA_PROJECT = "/tmp/ghidra_projects"
 GHIDRA_SCRIPTS = os.path.join(BASE_DIR, "ghidra_scripts")
