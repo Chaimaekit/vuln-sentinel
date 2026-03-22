@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="setup-badge">
+  <span class="badge-dot"></span>First-time setup
+</div>
+<div class="card">
+  <div class="card-title">Create admin account</div>
+  <div class="card-sub">This is the only account with access to the dashboard. Store your credentials securely.</div>
+  {% if error %}
+  <div class="error-box">{{ error }}</div>
+  {% endif %}
+  <form method="POST">
+    <div class="field">
+      <label>Username</label>
+      <input name="username" placeholder="admin" required autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input name="password" type="password" placeholder="Min. 8 characters" required autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirm Password</label>
+      <input name="confirm" type="password" placeholder="Repeat password" required>
+    </div>
+    <button class="btn" type="submit">Create account &amp; enter dashboard</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnSentinel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" id="fav" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #ffffff; --bg-off: #f7f7f5; --bg-card: #f2f2f0; --border: #e0e0dc;
+      --black: #0a0a0a; --gray-hi: #3a3a3a; --gray-mid: #6b6b6b;
+      --gray-lo: #9a9a9a; --gray-xlo: #c8c8c4;
+      --red: #c42b2b; --orange: #bf6010; --yellow: #9a7e00; --green: #1f7035;
+      --shield: #0a0a0a;
+    }
+    [data-dark] {
+      --bg: #111111; --bg-off: #1a1a1a; --bg-card: #222222; --border: #2e2e2e;
+      --black: #f0f0ee; --gray-hi: #c8c8c4; --gray-mid: #888884;
+      --gray-lo: #555552; --gray-xlo: #333330;
+      --red: #e05050; --orange: #e07830; --yellow: #c8a820; --green: #3aaa60;
+      --shield: #f0f0ee;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; font-family: 'Inter', sans-serif;
+      background: var(--bg); color: var(--black);
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    }
+    body { display: flex; overflow: hidden; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .sidebar {
+      width: 220px; min-width: 220px; background: var(--bg);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    }
+    .brand { padding: 28px 24px 24px; border-bottom: 1px solid var(--border); }
+    .brand-logo { display: flex; align-items: center; gap: 10px; }
+    .brand-logo svg { width: 34px; height: 34px; flex-shrink: 0; }
+    .brand-name {
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: -0.2px; color: var(--black);
+    }
+    .nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 1px; }
+    .nav-sep { height: 1px; background: var(--border); margin: 10px 0; }
+    .nav-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 9px 12px; border-radius: 6px; border: none;
+      background: transparent; cursor: pointer; text-align: left;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+      color: var(--gray-mid); transition: background 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { background: var(--bg-card); color: var(--black); }
+    .nav-btn.active { background: var(--bg-card); color: var(--black); }
+    .nav-inner { display: flex; align-items: center; gap: 10px; }
+    .nav-btn svg {
+      width: 14px; height: 14px; flex-shrink: 0;
+      stroke: currentColor; fill: none; opacity: 0.5;
+    }
+    .nav-btn:hover svg, .nav-btn.active svg { opacity: 0.9; }
+    .nav-chevron { font-size: 14px; opacity: 0.35; }
+    .sidebar-bottom {
+      padding: 16px 12px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .user-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; font-size: 12px; color: var(--gray-mid);
+    }
+    .user-av {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--black); color: var(--bg);
+      font-size: 9px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .theme-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 12px; font-weight: 500; color: var(--gray-mid);
+      transition: background 0.15s;
+    }
+    .theme-row:hover { background: var(--bg-card); color: var(--black); }
+    .tog-track {
+      width: 32px; height: 18px; border-radius: 100px;
+      background: var(--border); position: relative;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .tog-track.on { background: var(--black); }
+    .tog-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--bg); transition: transform 0.2s;
+    }
+    .tog-track.on .tog-thumb { transform: translateX(14px); }
+    .sb-btn {
+      width: 100%; background: var(--black); border: none; color: var(--bg);
+      padding: 10px 14px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500; cursor: pointer; text-align: center;
+      text-decoration: none; display: block; transition: opacity 0.15s;
+    }
+    .sb-btn:hover { opacity: 0.78; }
+    .sb-btn.sec {
+      background: transparent; border: 1px solid var(--border); color: var(--gray-mid);
+    }
+    .sb-btn.sec:hover { background: var(--bg-card); color: var(--black); }
+    .sb-btn.out {
+      background: transparent;
+      border: 1px solid rgba(196,43,43,0.3); color: var(--red);
+    }
+    .sb-btn.out:hover { background: rgba(196,43,43,0.08); }
+
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      height: 52px; background: var(--bg); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 36px; gap: 8px; flex-shrink: 0;
+    }
+    .tb-logo {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      color: var(--black); letter-spacing: -0.2px;
+    }
+    .tb-sep { color: var(--gray-xlo); margin: 0 6px; font-size: 15px; }
+    .tb-page { font-size: 13px; color: var(--gray-mid); }
+    .tb-space { flex: 1; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 5px 12px; border-radius: 100px;
+      font-size: 12px; font-weight: 500; color: var(--gray-mid);
+    }
+    .led { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 3s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .page { display: none; flex: 1; overflow-y: auto; padding: 44px 36px; }
+    .chat-page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+
+    .hero { margin-bottom: 44px; }
+    .hero-lbl {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.8px;
+      text-transform: uppercase; color: var(--gray-lo); margin-bottom: 14px;
+    }
+    .hero-title {
+      font-family: 'DM Sans', sans-serif; font-size: 42px; font-weight: 700;
+      line-height: 1.1; letter-spacing: -1px; color: var(--black);
+    }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; margin-bottom: 48px;
+      background: var(--border); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .stat { background: var(--bg); padding: 24px 22px; transition: background 0.15s; }
+    .stat:hover { background: var(--bg-off); }
+    .stat-lbl {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.8px;
+      text-transform: uppercase; color: var(--gray-lo); margin-bottom: 10px;
+    }
+    .stat-num {
+      font-family: 'DM Sans', sans-serif; font-size: 36px; font-weight: 700;
+      line-height: 1; letter-spacing: -0.5px; color: var(--black);
+    }
+    .stat-num.crit { color: var(--red); }
+    .stat-num.high { color: var(--orange); }
+    .stat-num.safe { color: var(--green); }
+
+    .sec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .sec-lbl { font-size: 10px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; color: var(--gray-lo); }
+    .sec-ct { font-size: 12px; color: var(--gray-lo); }
+
+    .cards { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .rcard { background: var(--bg); border-bottom: 1px solid var(--border); }
+    .rcard:last-child { border-bottom: none; }
+    .rcard:hover { background: var(--bg-off); }
+    .rcard-row { display: flex; align-items: stretch; }
+    .accent { width: 3px; flex-shrink: 0; }
+    .accent.critical { background: var(--red); }
+    .accent.high     { background: var(--orange); }
+    .accent.medium   { background: var(--yellow); }
+    .accent.low      { background: var(--green); }
+    .accent.unknown  { background: var(--gray-xlo); }
+    .rcard-body { flex: 1; padding: 18px 22px; display: flex; align-items: center; gap: 20px; }
+    .rcard-info { flex: 1; min-width: 0; }
+    .nameline { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .fname {
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+      color: var(--black); letter-spacing: -0.2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rbadge {
+      font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 100px; flex-shrink: 0;
+    }
+    .rbadge.critical { color: var(--red);    background: rgba(196,43,43,0.08);  border: 1px solid rgba(196,43,43,0.2); }
+    .rbadge.high     { color: var(--orange); background: rgba(191,96,16,0.08);  border: 1px solid rgba(191,96,16,0.2); }
+    .rbadge.medium   { color: var(--yellow); background: rgba(154,126,0,0.08);  border: 1px solid rgba(154,126,0,0.2); }
+    .rbadge.low      { color: var(--green);  background: rgba(31,112,53,0.08);  border: 1px solid rgba(31,112,53,0.2); }
+    .rbadge.unknown  { color: var(--gray-lo);background: rgba(154,154,154,0.08);border: 1px solid rgba(154,154,154,0.2); }
+    .verdict { font-size: 13px; color: var(--gray-mid); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sum-btn {
+      background: none; border: 1px solid var(--border); padding: 4px 12px;
+      border-radius: 100px; font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 500; color: var(--gray-mid); cursor: pointer;
+    }
+    .sum-btn:hover { background: var(--bg-card); color: var(--black); }
+    .rcard-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 10px; flex-shrink: 0; }
+    .score { font-family: 'DM Sans', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -0.5px; }
+    .score .den { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400; color: var(--gray-lo); }
+    .score.critical { color: var(--red); }
+    .score.high     { color: var(--orange); }
+    .score.medium   { color: var(--yellow); }
+    .score.low      { color: var(--green); }
+    .score.unknown  { color: var(--gray-lo); }
+    .dl-btn {
+      font-size: 11px; font-weight: 500; color: var(--gray-mid); text-decoration: none;
+      border: 1px solid var(--border); padding: 5px 12px; border-radius: 100px;
+    }
+    .dl-btn:hover { border-color: var(--black); color: var(--black); }
+    .summary {
+      display: none; padding: 16px 22px 20px 25px; background: var(--bg-off);
+      border-top: 1px solid var(--border); font-size: 13px; line-height: 1.8; color: var(--gray-hi);
+    }
+    .rcard-foot { padding: 8px 22px 10px 25px; border-top: 1px solid var(--border); background: var(--bg-off); }
+    .ts { font-size: 11px; color: var(--gray-lo); }
+    .sig-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 16px; }
+    .sig-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    .sig-lbl { font-size: 9px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; color: var(--gray-lo); margin-bottom: 8px; }
+    .sig-val { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 700; line-height: 1; color: var(--black); }
+    .sig-val .den { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; color: var(--gray-lo); }
+    .sig-sub { font-size: 10px; color: var(--gray-lo); margin-top: 4px; }
+    .empty { padding: 60px 24px; }
+    .empty-title { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 700; color: var(--black); margin-bottom: 6px; }
+    .empty-sub { font-size: 13px; color: var(--gray-lo); }
+
+    .chat-hd { padding: 24px 36px 18px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+    .chat-hd-title { font-family: 'DM Sans', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--black); margin-bottom: 8px; }
+    .chips { display: flex; gap: 6px; }
+    .chip { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 100px; }
+    .chip-m { color: var(--gray-hi); background: var(--bg-card); border: 1px solid var(--border); }
+    .chip-l { color: var(--green); background: rgba(31,112,53,0.08); border: 1px solid rgba(31,112,53,0.2); }
+    .chat-msgs { flex: 1; overflow-y: auto; padding: 28px 36px; display: flex; flex-direction: column; gap: 22px; }
+    .msg { display: flex; gap: 12px; max-width: 720px; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .av { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .msg.assistant .av { background: var(--black); color: var(--bg); }
+    .msg.user .av { background: var(--bg-card); border: 1px solid var(--border); color: var(--gray-mid); }
+    .msg-body { flex: 1; }
+    .msg-role { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 6px; color: var(--gray-lo); }
+    .msg.user .msg-role { text-align: right; }
+    .bubble { padding: 13px 16px; border-radius: 10px; font-size: 14px; line-height: 1.75; color: var(--gray-hi); }
+    .msg.assistant .bubble { background: var(--bg-off); border: 1px solid var(--border); }
+    .msg.user .bubble { background: var(--black); color: var(--bg); }
+    .bubble code { font-family: 'Courier New', monospace; font-size: 12px; background: var(--bg-card); color: var(--black); padding: 1px 5px; border-radius: 3px; }
+    .typing { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+    .tdot { width: 5px; height: 5px; border-radius: 50%; background: var(--gray-xlo); animation: tb 1.4s ease-in-out infinite; }
+    .tdot:nth-child(2) { animation-delay: 0.18s; }
+    .tdot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes tb { 0%,60%,100%{transform:translateY(0);opacity:0.3} 30%{transform:translateY(-5px);opacity:1} }
+    .chat-foot { padding: 14px 36px 22px; border-top: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+    .inp-shell { display: flex; align-items: flex-end; gap: 10px; background: var(--bg-off); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; transition: border-color 0.15s; }
+    .inp-shell:focus-within { border-color: var(--black); }
+    #chatInput { flex: 1; background: none; border: none; outline: none; resize: none; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--black); line-height: 1.5; min-height: 22px; max-height: 120px; }
+    #chatInput::placeholder { color: var(--gray-lo); }
+    .send-btn { background: var(--black); border: none; color: var(--bg); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
+    .send-btn:hover { opacity: 0.75; }
+    .send-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+    .inp-hint { font-size: 11px; color: var(--gray-lo); text-align: center; margin-top: 8px; }
+
+    .status-section { margin-bottom: 36px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .status-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 22px;
+    }
+    .status-card-title {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.8px;
+      text-transform: uppercase; color: var(--gray-lo); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-dot.online  { background: var(--green); box-shadow: 0 0 0 2px rgba(31,112,53,0.15); }
+    .status-dot.offline { background: var(--red);   box-shadow: 0 0 0 2px rgba(196,43,43,0.15); }
+    .status-dot.warn    { background: var(--orange);box-shadow: 0 0 0 2px rgba(191,96,16,0.15); }
+    .status-dot.loading { background: var(--gray-xlo); animation: pulse 1.5s ease-in-out infinite; }
+    .status-row-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .status-row-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .status-row-item:first-child { padding-top: 0; }
+    .sri-label { font-size: 13px; color: var(--gray-mid); }
+    .sri-value { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--black); }
+    .sri-value.ok     { color: var(--green); }
+    .sri-value.err    { color: var(--red); }
+    .sri-value.warn   { color: var(--orange); }
+    .engine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .engine-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-off); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+    }
+    .engine-name { font-size: 12px; font-weight: 600; color: var(--black); }
+    .engine-sub  { font-size: 10px; color: var(--gray-lo); margin-top: 2px; }
+    .engine-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 100px; flex-shrink: 0;
+    }
+    .engine-badge.active   { color: var(--green);   background: rgba(31,112,53,0.1);  border: 1px solid rgba(31,112,53,0.25); }
+    .engine-badge.inactive { color: var(--gray-lo); background: var(--bg-card); border: 1px solid var(--border); }
+    .refresh-status-btn {
+      font-size: 11px; font-weight: 500; color: var(--gray-lo);
+      background: none; border: 1px solid var(--border); padding: 4px 12px;
+      border-radius: 100px; cursor: pointer; transition: all 0.15s;
+    }
+    .refresh-status-btn:hover { color: var(--black); border-color: var(--black); }
+
+    .slist { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .srow { background: var(--bg); border-bottom: 1px solid var(--border); padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+    .srow:last-child { border-bottom: none; }
+    .srow:hover { background: var(--bg-off); }
+    .skey { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--black); min-width: 160px; }
+    .sval-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .sval { font-size: 13px; color: var(--gray-mid); }
+    .sinput { font-size: 13px; color: var(--black); background: var(--bg-off); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; outline: none; min-width: 140px; font-family: 'Inter', sans-serif; }
+    .sinput:focus { border-color: var(--black); }
+    .s-edit { font-size: 11px; font-weight: 500; color: var(--gray-lo); background: none; border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; cursor: pointer; }
+    .s-edit:hover { color: var(--black); border-color: var(--black); }
+    .s-save { font-size: 11px; font-weight: 600; color: var(--bg); background: var(--black); border: none; padding: 5px 12px; border-radius: 100px; cursor: pointer; display: none; }
+    .s-save:hover { opacity: 0.75; }
+    .s-cancel { font-size: 11px; font-weight: 500; color: var(--gray-mid); background: none; border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; cursor: pointer; display: none; }
+    .s-cancel:hover { color: var(--black); }
+    .range-wrap { display: flex; align-items: center; gap: 10px; }
+    .range-wrap input[type=range] { width: 110px; accent-color: var(--black); }
+    .range-num { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; color: var(--black); min-width: 20px; }
+    .toast { font-size: 13px; color: var(--green); margin-top: 16px; opacity: 0; transition: opacity 0.3s; }
+    .toast.show { opacity: 1; }
+    .vote-box {
+      margin-top: 12px; padding: 12px 16px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .vote-title {
+      font-size: 9px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase;
+      color: var(--gray-lo); margin-bottom: 8px;
+    }
+    .vote-sig { font-size: 12px; color: var(--gray-mid); margin-bottom: 3px; }
+    .vote-result {
+      margin-top: 8px; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600; color: var(--black);
+    }
+    .vote-conf { font-family: 'Inter', sans-serif; font-weight: 400; color: var(--gray-mid); }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 34 34" fill="none">
+        <path d="M17 2L3 8.5v9.5c0 7.5 5.8 13.8 14 15.5C25.2 31.8 31 25.5 31 18V8.5L17 2z" fill="var(--shield)"/>
+      </svg>
+      <span class="brand-name">VulnSentinel</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn" id="nav-analysis" onclick="showPage('analysis', this, 'Detection Feed')">
+      <div class="nav-inner">
+        <svg viewBox="0 0 16 16" stroke-width="1.5">
+          <rect x="1" y="1" width="6" height="6" rx="1"/>
+          <rect x="9" y="1" width="6" height="6" rx="1"/>
+          <rect x="1" y="9" width="6" height="6" rx="1"/>
+          <rect x="9" y="9" width="6" height="6" rx="1"/>
+        </svg>
+        Analysis
+      </div>
+    </button>
+
+    <button class="nav-btn" id="nav-chat" onclick="showPage('chat', this, 'AI Assistant')">
+      <div class="nav-inner">
+        <svg viewBox="0 0 16 16" stroke-width="1.5">
+          <path d="M13 9.5a1.5 1.5 0 01-1.5 1.5H5L2 14V3.5A1.5 1.5 0 013.5 2h8A1.5 1.5 0 0113 3.5z"/>
+        </svg>
+        AI Chat
+      </div>
+      <span class="nav-chevron">&#8250;</span>
+    </button>
+
+    <div class="nav-sep"></div>
+
+    <button class="nav-btn" id="nav-settings" onclick="showPage('settings', this, 'Settings')">
+      <div class="nav-inner">
+        <svg viewBox="0 0 16 16" stroke-width="1.5">
+          <circle cx="8" cy="8" r="2.2"/>
+          <path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/>
+        </svg>
+        Settings
+      </div>
+    </button>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="user-av">{{ username[0]|upper }}</div>
+      <span>{{ username }}</span>
+    </div>
+    <div class="theme-row" onclick="toggleDark()">
+      <span id="theme-lbl">Dark mode</span>
+      <div class="tog-track" id="tog-track">
+        <div class="tog-thumb"></div>
+      </div>
+    </div>
+    <button class="sb-btn" onclick="location.reload()">Refresh</button>
+    <button class="sb-btn sec" onclick="clearChat()">Clear Chat</button>
+    <a href="/logout" class="sb-btn out">Sign out</a>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="tb-logo">VulnSentinel</span>
+    <span class="tb-sep">/</span>
+    <span class="tb-page" id="tb-title">Detection Feed</span>
+    <div class="tb-space"></div>
+    <div class="status-pill"><div class="led"></div>Pipeline online</div>
+  </div>
+
+  <div class="page" id="page-analysis">
+    <div class="hero">
+      <div class="hero-lbl">Security Dashboard</div>
+      <div class="hero-title">Detection Feed</div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-lbl">Total Scans</div>
+        <div class="stat-num">{{ reports|length }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Critical</div>
+        <div class="stat-num crit">{{ reports|selectattr("risk_level","eq","critical")|list|length }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">High</div>
+        <div class="stat-num high">{{ reports|selectattr("risk_level","eq","high")|list|length }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Safe</div>
+        <div class="stat-num safe">{{ reports|selectattr("risk_level","eq","low")|list|length }}</div>
+      </div>
+    </div>
+    <div class="sec-hd">
+      <span class="sec-lbl">All analyzed files</span>
+      <span class="sec-ct">{{ reports|length }} results</span>
+    </div>
+    <div class="cards">
+    {% if reports %}
+      {% for r in reports %}
+        {% set lvl = r.risk_level if r.risk_level in ["critical","high","medium","low"] else "unknown" %}
+        {% set score = r.risk_score if r.risk_score is defined else 0 %}
+        {% set verdict = r.verdict if r.verdict is defined else (r.llm_analysis.verdict if r.llm_analysis is defined else "No verdict") %}
+        {% set summary = r.llm_analysis.summary if r.llm_analysis is defined else "No summary available." %}
+        <div class="rcard">
+          <div class="rcard-row">
+            <div class="accent {{ lvl }}"></div>
+            <div class="rcard-body">
+              <div class="rcard-info">
+                <div class="nameline">
+                  <span class="fname">{{ r.filename }}</span>
+                  <span class="rbadge {{ lvl }}">{{ lvl }}</span>
+                </div>
+                <div class="verdict">{{ verdict }}</div>
+                <button class="sum-btn" onclick="toggleSum(this)">View summary</button>
+              </div>
+              <div class="rcard-right">
+                <div class="score {{ lvl }}">{{ score }}<span class="den">/10</span></div>
+                <a href="/download/{{ r.report_file }}" class="dl-btn">Export JSON</a>
+              </div>
+            </div>
+          </div>
+          <div class="summary">
+            <div style="margin-bottom:14px">{{ summary }}</div>
+            {% if r.signal_scores is defined %}
+            <div class="sig-grid">
+              <div class="sig-box">
+                <div class="sig-lbl">Rules Engine</div>
+                <div class="sig-val">{{ r.signal_scores.rules_score }}<span class="den">/10</span></div>
+                <div class="sig-sub">Deterministic</div>
+              </div>
+              <div class="sig-box">
+                <div class="sig-lbl">LLM Score</div>
+                <div class="sig-val">{{ r.signal_scores.llm_score }}<span class="den">/10</span></div>
+                <div class="sig-sub">Conf: {{ r.signal_scores.llm_confidence }}/10</div>
+              </div>
+              <div class="sig-box">
+                <div class="sig-lbl">Semgrep</div>
+                <div class="sig-val">{{ r.signal_scores.semgrep_count }}<span class="den"> hits</span></div>
+                <div class="sig-sub">Pattern match</div>
+              </div>
+              <div class="sig-box">
+                <div class="sig-lbl">Sandbox</div>
+                {% if not r.signal_scores.sandbox_ran %}
+                  <div class="sig-val">—</div>
+                {% elif r.signal_scores.sandbox_threat %}
+                  <div class="sig-val" style="color:var(--red)">THREAT</div>
+                {% else %}
+                  <div class="sig-val" style="color:var(--green)">CLEAN</div>
+                {% endif %}
+                <div class="sig-sub">Ground truth</div>
+              </div>
+            </div>
+            {% if r.decision is defined and r.decision.signals is defined %}
+            <div class="vote-box">
+              <div class="vote-title">Vote Breakdown</div>
+              {% for sig in r.decision.signals %}
+              <div class="vote-sig">· {{ sig }}</div>
+              {% endfor %}
+              <div class="vote-result">
+                &#8594; {{ r.decision.final_action }}
+                <span class="vote-conf">({{ r.decision.confidence }} confidence)</span>
+              </div>
+            </div>
+            {% endif %}
+            {% endif %}
+          </div>
+          <div class="rcard-foot"><span class="ts">{{ r.timestamp }}</span></div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">
+        <div class="empty-title">No reports yet</div>
+        <div class="empty-sub">Drop a file into incoming/ to begin analysis</div>
+      </div>
+    {% endif %}
+    </div>
+  </div>
+
+  <div class="chat-page" id="page-chat">
+    <div class="chat-hd">
+      <div class="chat-hd-title">AI Assistant</div>
+      <div class="chips">
+        <span class="chip chip-m">{{ settings.llm_model }}</span>
+        <span class="chip chip-l">fully local</span>
+      </div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">
+      <div class="msg assistant">
+        <div class="av">VS</div>
+        <div class="msg-body">
+          <div class="msg-role">Assistant</div>
+          <div class="bubble">VulnSentinel AI is ready. Ask me about scan results, CVEs, vulnerability classes, or analysis techniques.<br><br>All inference runs locally — nothing leaves your VM.</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-foot">
+      <div class="inp-shell">
+        <textarea id="chatInput" rows="1"
+          placeholder="Ask about a vulnerability, CVE, or scan result..."
+          onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMsg()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1.5 1.5l13 6.5-13 6.5V9.5l9-2.5-9-2.5V1.5z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="inp-hint">Enter to send &middot; Shift+Enter for new line</div>
+    </div>
+  </div>
+
+  <div class="page" id="page-settings">
+    <div class="hero">
+      <div class="hero-lbl">System</div>
+      <div class="hero-title">Settings</div>
+    </div>
+    <div class="status-section">
+      <div class="sec-hd" style="margin-bottom:16px">
+        <span class="sec-lbl">System Status</span>
+        <button class="refresh-status-btn" onclick="loadStatus()">&#8635; Refresh</button>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="status-card-title">
+            <span class="status-dot loading" id="ollama-dot"></span>
+            Local LLM
+          </div>
+          <div class="status-row-item">
+            <span class="sri-label">Local process</span>
+            <span class="sri-value" id="st-ollama">Checking…</span>
+          </div>
+          <div class="status-row-item">
+            <span class="sri-label">Active model</span>
+            <span class="sri-value" id="st-model">—</span>
+          </div>
+          <div class="status-row-item">
+            <span class="sri-label">Model loaded</span>
+            <span class="sri-value" id="st-loaded">—</span>
+          </div>
+          <div class="status-row-item">
+            <span class="sri-label">Endpoint</span>
+            <span class="sri-value" id="st-url" style="font-size:11px;font-family:'Inter',sans-serif;font-weight:400;color:var(--gray-mid)">—</span>
+          </div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-card-title">
+            <span class="status-dot loading" id="engines-dot"></span>
+            Scan Engines
+          </div>
+          <div class="engine-grid" id="engine-grid">
+            <div class="engine-item">
+              <div><div class="engine-name">Semgrep</div><div class="engine-sub">Static analysis</div></div>
+              <span class="engine-badge inactive" id="eng-semgrep">—</span>
+            </div>
+            <div class="engine-item">
+              <div><div class="engine-name">Docker</div><div class="engine-sub">Sandbox isolation</div></div>
+              <span class="engine-badge inactive" id="eng-docker">—</span>
+            </div>
+            <div class="engine-item">
+              <div><div class="engine-name">Risk engine</div><div class="engine-sub">Threshold</div></div>
+              <span class="engine-badge active" id="eng-risk">—</span>
+            </div>
+            <div class="engine-item">
+              <div><div class="engine-name">Sandbox mem</div><div class="engine-sub">Container limit</div></div>
+              <span class="engine-badge active" id="eng-mem">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-hd" style="margin-bottom:16px">
+      <span class="sec-lbl">Pipeline configuration</span>
+    </div>
+    <div class="slist">
+
+      <div class="srow">
+        <span class="skey">LLM Model</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-llm_model">{{ settings.llm_model }}</span>
+          <input class="sinput" id="i-llm_model" value="{{ settings.llm_model }}" style="display:none">
+          <button class="s-edit" id="e-llm_model" onclick="startEdit('llm_model')">Edit</button>
+          <button class="s-save" id="sv-llm_model" onclick="saveField('llm_model')">Save</button>
+          <button class="s-cancel" id="c-llm_model" onclick="cancelEdit('llm_model')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Ollama URL</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-ollama_url">{{ settings.ollama_url }}</span>
+          <input class="sinput" id="i-ollama_url" value="{{ settings.ollama_url }}" style="display:none">
+          <button class="s-edit" id="e-ollama_url" onclick="startEdit('ollama_url')">Edit</button>
+          <button class="s-save" id="sv-ollama_url" onclick="saveField('ollama_url')">Save</button>
+          <button class="s-cancel" id="c-ollama_url" onclick="cancelEdit('ollama_url')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Risk Threshold</span>
+        <div class="sval-wrap">
+          <div class="range-wrap">
+            <input type="range" min="1" max="10" step="1" id="i-risk_threshold"
+              value="{{ settings.risk_threshold }}"
+              oninput="document.getElementById('rv').textContent=this.value">
+            <span class="range-num" id="rv">{{ settings.risk_threshold }}</span>
+            <span class="sval">/10</span>
+          </div>
+          <button class="s-save" style="display:inline-block" onclick="saveField('risk_threshold')">Save</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Sandbox Timeout</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-sandbox_timeout">{{ settings.sandbox_timeout }}s</span>
+          <input class="sinput" id="i-sandbox_timeout" value="{{ settings.sandbox_timeout }}" type="number" min="5" max="300" style="display:none;width:80px">
+          <button class="s-edit" id="e-sandbox_timeout" onclick="startEdit('sandbox_timeout')">Edit</button>
+          <button class="s-save" id="sv-sandbox_timeout" onclick="saveField('sandbox_timeout')">Save</button>
+          <button class="s-cancel" id="c-sandbox_timeout" onclick="cancelEdit('sandbox_timeout')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Sandbox Memory</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-sandbox_memory">{{ settings.sandbox_memory }}</span>
+          <input class="sinput" id="i-sandbox_memory" value="{{ settings.sandbox_memory }}" placeholder="512m or 1g" style="display:none;width:100px">
+          <button class="s-edit" id="e-sandbox_memory" onclick="startEdit('sandbox_memory')">Edit</button>
+          <button class="s-save" id="sv-sandbox_memory" onclick="saveField('sandbox_memory')">Save</button>
+          <button class="s-cancel" id="c-sandbox_memory" onclick="cancelEdit('sandbox_memory')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Dashboard Port</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-dashboard_port">{{ settings.dashboard_port }}</span>
+          <input class="sinput" id="i-dashboard_port" value="{{ settings.dashboard_port }}" type="number" min="1024" max="65535" style="display:none;width:90px">
+          <button class="s-edit" id="e-dashboard_port" onclick="startEdit('dashboard_port')">Edit</button>
+          <button class="s-save" id="sv-dashboard_port" onclick="saveField('dashboard_port')">Save</button>
+          <button class="s-cancel" id="c-dashboard_port" onclick="cancelEdit('dashboard_port')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <span class="skey">Inference</span>
+        <div class="sval-wrap">
+          <span class="sval" id="d-inference">{{ settings.inference }}</span>
+          <input class="sinput" id="i-inference" value="{{ settings.inference }}" style="display:none">
+          <button class="s-edit" id="e-inference" onclick="startEdit('inference')">Edit</button>
+          <button class="s-save" id="sv-inference" onclick="saveField('inference')">Save</button>
+          <button class="s-cancel" id="c-inference" onclick="cancelEdit('inference')">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="toast" id="toast">&#10003;&nbsp; Settings saved</div>
+  </div>
+
+</div>
+<script>
+var pages = ['analysis', 'chat', 'settings'];
+
+function showPage(id, btn, title) {
+  pages.forEach(function(p) {
+    var el = document.getElementById('page-' + p);
+    if (el) el.style.display = 'none';
+  });
+
+  document.querySelectorAll('.nav-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+
+  var target = document.getElementById('page-' + id);
+  if (target) {
+    target.style.display = (id === 'chat') ? 'flex' : 'block';
+  }
+
+  if (btn) btn.classList.add('active');
+  document.getElementById('tb-title').textContent = title;
+}
+
+var dark = false;
+
+function applyDark(val) {
+  dark = val;
+  var root = document.getElementById('html-root');
+  if (val) {
+    root.setAttribute('data-dark', '');
+  } else {
+    root.removeAttribute('data-dark');
+  }
+  var track = document.getElementById('tog-track');
+  if (track) track.classList.toggle('on', val);
+  var lbl = document.getElementById('theme-lbl');
+  if (lbl) lbl.textContent = val ? 'Light mode' : 'Dark mode';
+  setFavicon(val);
+  localStorage.setItem('vs-dark', val ? '1' : '0');
+}
+
+function toggleDark() { applyDark(!dark); }
+
+function setFavicon(val) {
+  var fav = document.getElementById('fav');
+  if (!fav) return;
+  var c = val ? '%23f0f0ee' : '%230a0a0a';
+  fav.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2L3 8v9.5C3 25 8.5 30.8 16 32.5 23.5 30.8 29 25 29 17.5V8L16 2z" fill="' + c + '"/></svg>';
+}
+
+function startEdit(key) {
+  document.getElementById('d-' + key).style.display  = 'none';
+  document.getElementById('i-' + key).style.display  = 'inline-block';
+  document.getElementById('e-' + key).style.display  = 'none';
+  document.getElementById('sv-' + key).style.display = 'inline-block';
+  document.getElementById('c-' + key).style.display  = 'inline-block';
+  document.getElementById('i-' + key).focus();
+}
+
+function cancelEdit(key) {
+  document.getElementById('d-' + key).style.display  = 'inline';
+  document.getElementById('i-' + key).style.display  = 'none';
+  document.getElementById('e-' + key).style.display  = 'inline-block';
+  document.getElementById('sv-' + key).style.display = 'none';
+  document.getElementById('c-' + key).style.display  = 'none';
+}
+
+async function saveField(key) {
+  var inp = document.getElementById('i-' + key);
+  var val = inp ? inp.value : null;
+  if (val === null) return;
+  var body = {};
+  body[key] = val;
+  try {
+    var r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      var disp = document.getElementById('d-' + key);
+      if (disp) {
+        disp.textContent = (key === 'sandbox_timeout') ? val + 's' : val;
+      }
+      if (document.getElementById('c-' + key)) cancelEdit(key);
+      showToast();
+    }
+  } catch(err) {
+    console.error('saveField error:', err);
+  }
+}
+
+function showToast() {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+var msgsEl = document.getElementById('chatMsgs');
+
+function grow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+
+function scrollBot() {
+  if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function addMsg(role, html) {
+  var d = document.createElement('div');
+  d.className = 'msg ' + role;
+  d.innerHTML =
+    '<div class="av">' + (role === 'assistant' ? 'VS' : 'ME') + '</div>' +
+    '<div class="msg-body">' +
+    '<div class="msg-role">' + (role === 'assistant' ? 'Assistant' : 'You') + '</div>' +
+    '<div class="bubble">' + html + '</div>' +
+    '</div>';
+  msgsEl.appendChild(d);
+  scrollBot();
+  return d.querySelector('.bubble');
+}
+
+function showTyping() {
+  var d = document.createElement('div');
+  d.className = 'msg assistant';
+  d.id = 'typing';
+  d.innerHTML =
+    '<div class="av">VS</div>' +
+    '<div class="msg-body"><div class="msg-role">Assistant</div>' +
+    '<div class="bubble"><div class="typing">' +
+    '<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>' +
+    '</div></div></div>';
+  msgsEl.appendChild(d);
+  scrollBot();
+}
+
+function removeTyping() {
+  var t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function sendMsg() {
+  var inp = document.getElementById('chatInput');
+  var btn = document.getElementById('sendBtn');
+  var txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+  btn.disabled = true;
+  addMsg('user', esc(txt));
+  showTyping();
+  try {
+    var res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: txt })
+    });
+    removeTyping();
+    var bub = addMsg('assistant', '');
+    var rdr = res.body.getReader();
+    var dec = new TextDecoder();
+    var full = '';
+    while (true) {
+      var chunk = await rdr.read();
+      if (chunk.done) break;
+      dec.decode(chunk.value).split('\n').forEach(function(line) {
+        if (!line.startsWith('data:')) return;
+        try {
+          var d = JSON.parse(line.slice(5));
+          if (d.token) { full += d.token; bub.innerHTML = fmt(full); scrollBot(); }
+        } catch(e) {}
+      });
+    }
+  } catch(e) {
+    removeTyping();
+    addMsg('assistant', 'Connection error: ' + e.message);
+  }
+  btn.disabled = false;
+  inp.focus();
+}
+
+function fmt(t) {
+  return esc(t).replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearChat() {
+  if (!msgsEl) return;
+  msgsEl.innerHTML =
+    '<div class="msg assistant"><div class="av">VS</div>' +
+    '<div class="msg-body"><div class="msg-role">Assistant</div>' +
+    '<div class="bubble">Chat cleared. Ready when you are.</div></div></div>';
+}
+
+function toggleSum(btn) {
+  var s = btn.closest('.rcard').querySelector('.summary');
+  if (!s) return;
+  var open = s.style.display === 'block';
+  s.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'View summary' : 'Hide summary';
+}
+
+function setDot(id, state) {
+  var d = document.getElementById(id);
+  if (!d) return;
+  d.className = 'status-dot ' + state;
+}
+
+async function loadStatus() {
+  setDot('ollama-dot', 'loading');
+  setDot('engines-dot', 'loading');
+  try {
+    var r = await fetch('/api/status');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var d = await r.json();
+
+    var ollamaEl = document.getElementById('st-ollama');
+    var modelEl  = document.getElementById('st-model');
+    var loadedEl = document.getElementById('st-loaded');
+    var urlEl    = document.getElementById('st-url');
+
+    if (ollamaEl) {
+      ollamaEl.textContent = d.ollama_online ? 'Running' : 'Not running';
+      ollamaEl.className   = 'sri-value ' + (d.ollama_online ? 'ok' : 'err');
+    }
+    if (modelEl)  modelEl.textContent  = d.model_name || '—';
+    if (loadedEl) {
+      loadedEl.textContent = d.model_loaded ? 'Yes' : (d.ollama_online ? 'Not loaded' : '—');
+      loadedEl.className   = 'sri-value ' + (d.model_loaded ? 'ok' : (d.ollama_online ? 'warn' : ''));
+    }
+    if (urlEl) urlEl.textContent = d.ollama_url || '—';
+
+    setDot('ollama-dot', d.ollama_online ? (d.model_loaded ? 'online' : 'warn') : 'offline');
+
+    function setBadge(id, active, label) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = label || (active ? 'Active' : 'Not found');
+      el.className   = 'engine-badge ' + (active ? 'active' : 'inactive');
+    }
+    setBadge('eng-semgrep', d.semgrep);
+    setBadge('eng-docker',  d.docker);
+    setBadge('eng-risk',    true, d.risk_threshold + ' / 10');
+    setBadge('eng-mem',     true, d.sandbox_memory);
+
+    setDot('engines-dot', (d.semgrep && d.docker) ? 'online' : (d.semgrep || d.docker ? 'warn' : 'offline'));
+
+  } catch(e) {
+    setDot('ollama-dot', 'offline');
+    setDot('engines-dot', 'offline');
+    var el = document.getElementById('st-ollama');
+    if (el) { el.textContent = 'Error'; el.className = 'sri-value err'; }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  showPage('analysis', document.getElementById('nav-analysis'), 'Detection Feed');
+
+  document.getElementById('nav-settings').addEventListener('click', function() {
+    setTimeout(loadStatus, 50);
+  });
+  var saved = localStorage.getItem('vs-dark');
+  var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyDark(saved !== null ? saved === '1' : sysDark);
+});
+</script>
+
+</body>
+</html>

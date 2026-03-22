@@ -6,9 +6,12 @@ processed/*
 !processed/.gitkeep
 logs/*
 !logs/.gitkeep
+tests/
+
 
 DOCUMENTATION.md
 *.pyc
 __pycache__/
 .env
 venv/
+dashboard/vs_users.json
